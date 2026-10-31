@@ -4,16 +4,21 @@
 [![docs.rs](https://docs.rs/benday-dots/badge.svg)](https://docs.rs/benday-dots)
 [![license](https://img.shields.io/crates/l/benday-dots.svg)](#license)
 
-Turn photos into old comic book prints.
+Photos can be turned into old comic book prints.
 
-The image is flattened into a handful of colour regions using the 64 tints a 1960s comic printer actually had
-(each of yellow, magenta and cyan at 0, 25, 50 or 100%). Each region is then screened as Ben-Day dots, one
-angled dot grid per ink, on yellowed newsprint with a touch of misregistration. Black ink lines and solid
-shadows are added on top. A pop-art preset swaps that for big 45° dots, a short flat palette and white paper.
+Here is how it works. The image is broken up into a small number of regions of color, using the 64 tints available
+to a comic book printer in the 1960s.
 
-It works as a command-line tool and as a library you can drop into an image pipeline.
+Each region is then printed using Ben-Day dots with the three inks (yellow, magenta and cyan), each at 0, 25, 50 or
+100%. The three dot grids are laid slightly out of register on yellowed newsprint. On top of this go black ink
+outlines and shadows.
 
-Each row shows the original, `--style comic` and `--style pop`, all rendered with `--scale 3`.
+An alternative preset produces large 45-degree dots, a limited color palette and white paper.
+
+This is a command-line program, but the library could also be used in an image pipeline.
+
+In each row below, the original is shown, the output with `--style comic`, and the output with `--style pop`. All
+were produced with `--scale 3`.
 
 ![Lenna](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/lenna.jpg)
 ![Astronaut](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/astronaut.jpg)
@@ -39,18 +44,19 @@ benday-dots photo.jpg print.png --dots-across 400 --scale 2 --paper white
 benday-dots photo.jpg print.png --colors 8
 ```
 
-Input can be JPEG or PNG; output is PNG. Any flag you pass overrides the style preset. A few worth knowing:
+It takes as input a PNG or JPEG and produces a PNG. Any of these flags will override the preset style. Most useful
+flags include:
 
-| Flag | What it does |
+| Flag | Effect |
 |---|---|
-| `--style comic\|pop` | Look preset (default `comic`). |
-| `--dots-across N` | Dot rows across the output width. Default 250 for comic, 70 for pop. |
-| `--scale S` | Output size as a multiple of the input. Region shapes don't change, only the dots get finer. |
-| `--colors N` | Pick N colours from the image with k-means instead of the full 64-tint chart. |
-| `--inks aged\|process` | Faded newsprint inks or clean modern ones. |
-| `--paper newsprint\|white\|cover` | Paper colour. |
-| `--misregister`, `--dot-gain`, `--grain` | Printing imperfections; set to 0 for a clean print. |
-| `--blacks L` | Lightness (0 to 100) below which areas go solid black. `0` turns this off. |
+| `--style comic\|pop` | Which kind of look to use (default: comic). |
+| `--dots-across N` | Number of rows of dots across the width of the output. For comic, default is 250; for pop, 70. |
+| `--scale S` | How much bigger to make the output compared with the input. The dots get smaller but the shapes of the regions stay the same. |
+| `--colors N` | Use k-means to pick N colors from the image, instead of the 64-tint chart. |
+| `--inks aged\|process` | Use faded inks (newsprint) or crisp inks (modern). |
+| `--paper newsprint\|white\|cover` | What color paper to use. |
+| `--misregister`, `--dot-gain`, `--grain` | Add imperfections to the printing. Set to zero for a crisp print. |
+| `--blacks L` | Areas of the image darker than lightness L (0 to 100) go solid black. |
 | `--no-lines` | Skip the ink outlines. |
 | `--dump-stages DIR` | Save the intermediate images, handy for tuning. |
 
@@ -63,8 +69,8 @@ Input can be JPEG or PNG; output is PNG. Any flag you pass overrides the style p
 benday-dots = { version = "0.1", default-features = false }
 ```
 
-With default features off you get only the in-memory conversion: no file I/O, no PNG/JPEG codecs and no `clap`.
-You give it decoded pixels and get decoded pixels back.
+With the default features turned off, only in-memory conversion is included. No file I/O, no JPEG or PNG codecs and
+no `clap`. The input is decoded pixels, the output is decoded pixels. Here's an example:
 
 ```rust
 use benday_dots::{convert, Options};
@@ -75,7 +81,8 @@ fn comicify(frame: &RgbImage) -> Result<RgbImage, benday_dots::Error> {
 }
 ```
 
-If your pipeline doesn't use the `image` crate, or uses a different version, pass raw bytes instead:
+If you aren't using the `image` crate in your pipeline, or if you're using a different version of it, you can pass
+bytes into and out of `convert_raw`:
 
 ```rust
 use benday_dots::{convert_raw, Options};
@@ -87,10 +94,10 @@ fn comicify(width: u32, height: u32, rgb: &[u8]) -> Result<Vec<u8>, benday_dots:
 }
 ```
 
-There is also `convert_dynamic` for any `image::DynamicImage` (greyscale, 16-bit, RGBA and so on; alpha is
-dropped), and `convert_with_stages`, which also returns the per-pixel tint map and the black ink mask.
+Another function, `convert_dynamic`, takes any `image::DynamicImage` (e.g. RGBA, greyscale, 16-bit). There is also
+`convert_with_stages`, which returns the black ink mask and a map of tints for each pixel.
 
-To read and write files, keep the `io` feature:
+If you want to read or write files, don't turn off the `io` feature:
 
 ```rust,no_run
 use benday_dots::{convert_file, Options};
@@ -102,49 +109,50 @@ fn main() -> Result<(), benday_dots::Error> {
 
 ### Features
 
-- `io` (default): `convert_file`, plus JPEG and PNG support through `image`.
-- `cli` (default, implies `io`): the `benday-dots` binary.
+- `io` (default): JPEG/PNG support and `convert_file`.
+- `cli` (implies `io`, default): the `benday-dots` command line tool.
 
 ## How it works
 
-1. Shrink the photo to a working size (2000 px on the long edge by default) and smooth it with an edge-preserving
-   bilateral filter, so regions go flat but edges stay sharp.
-2. Stretch the contrast, push the colours a bit (less so for near-greys, so skin and walls don't turn pink), and
-   snap every pixel to the nearest printable tint. Clean the result up: remove speckles, merge tiny regions, and
-   recolour each region from its average.
-3. Find ink lines with an XDoG edge detector, and mark the darkest areas as solid black.
-4. At full output resolution, screen each ink as round dots at its own angle and mix the inks on the paper
-   colour, then lay the black on top.
+1. I shrink the photo to a usable size (by default 2000 pixels along the long side) and smooth it using a bilateral
+   filter. This makes regions smooth but keeps edges sharp.
+2. I up the contrast of the image, add a little more color saturation (but less for nearly grey pixels, to avoid
+   pink skin and walls) and round each pixel to the closest available tint. Then I clean up the image, combining
+   small regions and recoloring each one to its average.
+3. Using an XDoG edge detector, I pick out ink lines. And I designate the darkest pixels as black.
+4. Now, at full resolution, I render each ink as round dots at its own angle, combine the inks on the paper color,
+   then add on the black.
 
-All the region work happens on the working grid. A bigger `--scale` therefore costs more only in the final dot
+All of the processing of regions happens on the shrunk image. So increasing `--scale` will only slow down the dot
 pass.
 
-A 12-megapixel photo takes about half a second on an 18-thread laptop CPU, including JPEG decode and PNG encode.
-The smoothing has hand-written AVX2 code that is picked at run time, with a portable fallback for other CPUs.
+On an 18-thread laptop, a 12-megapixel photo will take around half a second to go through JPEG decoding, PNG
+encoding and all of this processing.
+
+My code for step 1 is hand-optimized AVX2 and is used conditionally at runtime. There is also a portable fallback
+for other CPUs.
 
 ## License
 
-Licensed under either of
+You may use it under either
 
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <https://www.apache.org/licenses/LICENSE-2.0>)
 - MIT license ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
 
 at your option.
 
-`src/deflate.rs` is adapted from [fdeflate](https://github.com/image-rs/fdeflate) (MIT OR Apache-2.0).
+`src/deflate.rs` is based on [fdeflate](https://github.com/image-rs/fdeflate) (MIT OR Apache-2.0).
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this work by you,
-as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or
-conditions.
+Unless you specifically indicate otherwise, any original contribution you make to this project, within the meaning
+of the Apache-2.0 license, will be available under the licenses above (no other terms or conditions).
 
 ### Example images
 
-The examples are standard image-processing test images:
+Here are the images used in the examples. They're all standard ones used in image processing:
 
-- Lenna (Lena Forsén), from the USC-SIPI image database. The photo was originally published by Playboy Enterprises,
-  which holds its copyright.
-- Astronaut Eileen Collins, NASA, public domain.
-- Chelsea the cat, by Stéfan van der Walt, CC0.
-- Coffee, by Rachel Michetti (courtesy of Pikolo Espresso Bar), CC0.
+- Lenna (Lena Forsén) from the USC-SIPI image database.
+- Astronaut Eileen Collins, NASA (public domain).
+- Chelsea the cat, by Stéfan van der Walt (CC0).
+- Coffee, by Rachel Michetti of Pikolo Espresso Bar (CC0).
 
-The last three come from [scikit-image](https://github.com/scikit-image/scikit-image).
+The last three are from [scikit-image](https://github.com/scikit-image/scikit-image).
