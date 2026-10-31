@@ -13,13 +13,16 @@ shadows are added on top. A pop-art preset swaps that for big 45° dots, a short
 
 It works as a command-line tool and as a library you can drop into an image pipeline.
 
-![Original, comic and pop styles](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/portrait.jpg)
+Each row shows the original, `--style comic` and `--style pop`, all rendered with `--scale 3`.
 
-![Street market, original and comic](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/market.jpg)
+![Lenna](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/lenna.jpg)
+![Astronaut](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/astronaut.jpg)
+![Chelsea the cat](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/chelsea.jpg)
+![Coffee](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/coffee.jpg)
 
 Detail at 1:1:
 
-![Dots up close](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/market_detail.png)
+![Dots up close](https://raw.githubusercontent.com/RootInit/benday-dots/main/assets/lenna_detail.png)
 
 ## Install
 
@@ -136,7 +139,12 @@ conditions.
 
 ### Example images
 
-- Portrait of a young woman in red, Egypt, Roman period, A.D. 90–120. The Metropolitan Museum of Art, CC0
-  ([source](https://commons.wikimedia.org/wiki/File:Portrait_of_a_young_woman_in_red_MET_29I_E15R6.jpg)).
-- Fruit stall at the Albert Cuyp market, Amsterdam, by Fons Heijnsbroek, CC0
-  ([source](https://commons.wikimedia.org/wiki/File:2023_Amsterdam_-_a_fruit_market_stall_at_the_Albert_Cuyp_market_in_the_sunlight_with_a_lot_of_city_people_walking_and_shopping_-_free_download_photo_in_Dutch_street_photography_by_Fons_Heijnsbroek,_Netherlands.tif)).
+The examples are standard image-processing test images:
+
+- Lenna (Lena Forsén), from the USC-SIPI image database. The photo was originally published by Playboy Enterprises,
+  which holds its copyright.
+- Astronaut Eileen Collins, NASA, public domain.
+- Chelsea the cat, by Stéfan van der Walt, CC0.
+- Coffee, by Rachel Michetti (courtesy of Pikolo Espresso Bar), CC0.
+
+The last three come from [scikit-image](https://github.com/scikit-image/scikit-image).
